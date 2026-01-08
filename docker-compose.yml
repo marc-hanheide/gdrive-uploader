@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  drive-uploader:
+    build: .
+    volumes:
+      # Mount your credentials file
+      - ./credentials.json:/app/credentials.json
+      # Mount the token file (created after first auth)
+      - ./token.pickle:/app/token.pickle
+      # Mount the directory you want to upload
+      - ./uploads:/app/uploads
+    environment:
+      - UPLOAD_DIR=/app/uploads
+      - DRIVE_FOLDER_ID=  # Optional: add your Google Drive folder ID here
+      - FILE_PATTERN=*    # Change to *.pdf, *.jpg, etc. if needed
+      - CHECK_MD5=true    # Compare file contents (true/false)
+      - FORCE_UPLOAD=false # Upload even if file exists (true/false)

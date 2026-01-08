@@ -1,0 +1,21 @@
+[project]
+name = "gdrive-uploader"
+version = "0.1.0"
+description = "Automated Google Drive uploader with duplicate detection"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "google-auth-oauthlib>=1.2.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-api-python-client>=2.108.0",
+]
+
+[project.scripts]
+gdrive-upload = "gdrive_uploader:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = []
