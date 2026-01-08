@@ -1,6 +1,7 @@
 services:
   drive-uploader:
     build: .
+    image: ghcr.io/marc-hanheide/gdrive-uploader:latest
     volumes:
       # Mount your credentials file
       - token:/token
