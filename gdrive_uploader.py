@@ -372,6 +372,10 @@ def main():
     RECURSIVE = os.getenv('RECURSIVE', 'true').lower() == 'true'
     DAEMON_MODE = os.getenv('DAEMON_MODE', 'false').lower() == 'true'
     CHECK_INTERVAL = int(os.getenv('CHECK_INTERVAL', '300'))  # Default: 5 minutes
+    TOKEN_DIR = os.getenv('TOKEN_DIR', '.')
+    
+    # Build full paths for credentials and token files
+    token_file = os.path.join(TOKEN_DIR, 'token.pickle')
     
     print(f'Google Drive Uploader')
     print(f'Upload directory: {UPLOAD_DIR}')
@@ -392,7 +396,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    uploader = DriveUploader()
+    uploader = DriveUploader(token_file=token_file)
     
     if DAEMON_MODE:
         # Daemon mode: continuously monitor and upload

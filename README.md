@@ -22,6 +22,27 @@ Automated Google Drive uploader with duplicate detection. Only uploads files tha
 
 ## Quick Start
 
+### Option A: Docker Compose (Recommended)
+
+The fastest way to get started:
+
+1. **Get Google OAuth credentials** (see [Set up Google Drive API](#3-set-up-google-drive-api) below)
+2. **Save credentials:** Place `credentials.json` in the project directory
+3. **Authenticate once:**
+   ```bash
+   docker compose run --rm drive-uploader
+   ```
+   Follow the URL shown, authorize, and paste the code back
+4. **Run uploads:**
+   ```bash
+   docker compose run --rm drive-uploader
+   ```
+   Or enable daemon mode in `docker-compose.yml` and run `docker compose up -d`
+
+See [Using Docker Compose](#using-docker-compose) for detailed instructions.
+
+### Option B: Local Python Installation
+
 ### 1. Install uv
 
 ```bash
@@ -118,6 +139,9 @@ uv run gdrive-upload
 Configure via environment variables:
 
 ```bash
+# Credentials directory (where credentials.json and token.pickle are stored)
+export TOKEN_DIR="."
+
 # Upload directory
 export UPLOAD_DIR="./uploads"
 
@@ -136,6 +160,22 @@ export FORCE_UPLOAD="false"
 # Run
 uv run gdrive-upload
 ```
+
+### Custom Credentials Location
+
+By default, the uploader looks for `credentials.json` and stores `token.pickle` in the current directory. You can change this:
+
+```bash
+# Store credentials in a different directory
+export TOKEN_DIR="/path/to/credentials"
+uv run gdrive-upload
+```
+
+This is useful for:
+- Keeping credentials separate from your code
+- Sharing credentials across multiple projects
+- Running in Docker with mounted credential volumes
+- Following security best practices by storing credentials outside the application directory
 
 ## Daemon Mode
 
@@ -185,6 +225,20 @@ docker run -d \
   ghcr.io/marc-hanheide/gdrive-uploader:latest
 ```
 
+Or with custom credentials directory:
+
+```bash
+docker run -d \
+  --name gdrive-uploader-daemon \
+  --restart unless-stopped \
+  -e DAEMON_MODE="true" \
+  -e CHECK_INTERVAL="300" \
+  -e TOKEN_DIR="/app/config" \
+  -v $(pwd)/config:/app/config \
+  -v $(pwd)/uploads:/app/uploads \
+  ghcr.io/marc-hanheide/gdrive-uploader:latest
+```
+
 View logs:
 ```bash
 docker logs -f gdrive-uploader-daemon
@@ -220,7 +274,7 @@ services:
 
 Then run:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Docker Usage
@@ -290,15 +344,68 @@ docker run --rm \
 
 ### Using Docker Compose
 
-Edit `docker-compose.yml` to configure your settings, then:
+Docker Compose is the recommended way to run the uploader with persistent configuration.
 
+#### Initial Setup and Authentication
+
+1. **Prepare your environment:**
+   - Ensure `credentials.json` is in the project directory
+   - The `docker-compose.yml` is already configured with sensible defaults
+
+2. **First-time authentication** (interactive):
+   ```bash
+   docker compose run --rm drive-uploader
+   ```
+   
+   This will:
+   - Start the container interactively
+   - Display an authentication URL (since `MANUAL_AUTH=true` by default)
+   - Wait for you to visit the URL in any browser
+   - Prompt you to paste the authorization code
+   - Save the token to a persistent Docker volume
+   - Exit after authentication completes
+
+3. **Verify authentication:**
+   ```bash
+   # Run a one-time upload to test
+   docker compose run --rm drive-uploader
+   ```
+   
+   If authentication was successful, it will upload files without prompting for credentials.
+
+#### Running in Different Modes
+
+**One-time upload:**
 ```bash
-# First run (with browser authentication)
-docker-compose run --rm drive-uploader
-
-# Subsequent runs
-docker-compose up
+docker compose run --rm drive-uploader
 ```
+
+**Daemon mode** (continuous monitoring):
+```bash
+# Edit docker-compose.yml and set DAEMON_MODE=true, then:
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop daemon
+docker compose down
+```
+
+**Quick daemon start** (without editing docker-compose.yml):
+```bash
+docker compose run --rm -e DAEMON_MODE=true -e CHECK_INTERVAL=300 drive-uploader
+```
+
+#### Configuration
+
+Edit `docker-compose.yml` to customize:
+- `DRIVE_FOLDER_ID` - Target Google Drive folder
+- `FILE_PATTERN` - File types to upload (e.g., `*.pdf`)
+- `DAEMON_MODE` - Enable continuous monitoring (`true`/`false`)
+- `CHECK_INTERVAL` - Seconds between checks (daemon mode only)
+
+The token is stored in a Docker volume named `token` and persists across container restarts.
 
 ## Finding Your Google Drive Folder ID
 

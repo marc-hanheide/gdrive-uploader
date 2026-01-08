@@ -3,12 +3,12 @@ services:
     build: .
     volumes:
       # Mount your credentials file
+      - token:/token
       - ./credentials.json:/app/credentials.json
-      # Mount the token file (created after first auth)
-      - ./token.pickle:/app/token.pickle
       # Mount the directory you want to upload
       - ./uploads:/app/uploads
     environment:
+      - TOKEN_DIR=${GD_UPLOADER_TOKEN_DIR:-/token}
       - UPLOAD_DIR=${GD_UPLOADER_UPLOAD_DIR:-/app/uploads}
       - DRIVE_FOLDER_ID=${GD_UPLOADER_DRIVE_FOLDER_ID:-}    # Optional: add your Google Drive folder ID here
       - FILE_PATTERN=${GD_UPLOADER_FILE_PATTERN:-*}      # Change to *.pdf, *.jpg, etc. if needed
@@ -17,3 +17,6 @@ services:
       - MANUAL_AUTH=${GD_UPLOADER_MANUAL_AUTH:-true}    # Set to true for manual auth flow
       - DAEMON_MODE=${GD_UPLOADER_DAEMON_MODE:-false}
       - CHECK_INTERVAL=${GD_UPLOADER_CHECK_INTERVAL:-300}
+
+volumes:
+  token:
