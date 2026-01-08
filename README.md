@@ -4,7 +4,8 @@ Automated Google Drive uploader with duplicate detection. Only uploads files tha
 
 ## Features
 
-- ✅ One-time authentication (headless operation after initial setup)
+- ✅ Headless authentication with manual code entry option
+- ✅ One-time authentication (runs headless after initial setup)
 - ✅ Duplicate detection with MD5 checksum comparison
 - ✅ Pattern-based file selection (e.g., upload only PDFs)
 - ✅ Upload to specific Google Drive folders
@@ -43,9 +44,12 @@ cd gdrive-uploader
 4. Create OAuth 2.0 credentials:
    - Go to "APIs & Services" → "Credentials"
    - Click "Create Credentials" → "OAuth client ID"
-   - Choose "Desktop app"
+   - Choose **"Desktop app"** (or "TVs and Limited Input devices" for pure device flow)
+   - Give it a name (e.g., "Drive Uploader")
    - Download the JSON file
    - Save it as `credentials.json` in this directory
+
+   **Note**: Desktop app type supports both authentication modes.
 
 ### 4. Install dependencies
 
@@ -62,13 +66,45 @@ mkdir uploads
 echo "Test file" > uploads/test.txt
 ```
 
-Run the uploader (this will open a browser for authentication):
+Run the uploader. There are two authentication modes:
+
+#### Option A: Automatic Mode (default)
 
 ```bash
 uv run gdrive-upload
 ```
 
-Follow the browser prompts to authenticate. A `token.pickle` file will be created for subsequent headless runs.
+This starts a local server and displays a URL. Open that URL in a browser (can be on another machine) to authorize.
+
+#### Option B: Manual Mode (for headless servers)
+
+```bash
+MANUAL_AUTH=true uv run gdrive-upload
+```
+
+You'll see output like:
+
+```
+============================================================
+MANUAL AUTHENTICATION (HEADLESS MODE)
+============================================================
+Please visit this URL in a browser (on any device):
+
+https://accounts.google.com/o/oauth2/auth?client_id=...
+
+After authorizing, you will receive an authorization code.
+============================================================
+Enter the authorization code here: 
+```
+
+**On any device (phone, tablet, computer):**
+1. Visit the URL shown
+2. Sign in with your Google account and grant permissions
+3. Copy the authorization code displayed
+4. Paste it into the terminal prompt
+5. Press Enter
+
+A `token.pickle` file will be created for subsequent headless runs.
 
 ### 6. Subsequent runs (headless)
 
@@ -108,17 +144,33 @@ uv run gdrive-upload
 docker build -t gdrive-uploader .
 ```
 
-### First-time authentication (requires display)
+### First-time authentication
+
+#### Option A: Automatic Mode
 
 ```bash
 docker run -it --rm \
   -v $(pwd)/credentials.json:/app/credentials.json \
   -v $(pwd)/uploads:/app/uploads \
   -v $(pwd)/token.pickle:/app/token.pickle \
-  -e DISPLAY=$DISPLAY \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -p 8080:8080 \
   gdrive-uploader
 ```
+
+Open the URL shown in another browser to authorize.
+
+#### Option B: Manual Mode (recommended for servers)
+
+```bash
+docker run -it --rm \
+  -e MANUAL_AUTH=true \
+  -v $(pwd)/credentials.json:/app/credentials.json \
+  -v $(pwd)/uploads:/app/uploads \
+  -v $(pwd)/token.pickle:/app/token.pickle \
+  gdrive-uploader
+```
+
+Copy the URL to any browser, authorize, and paste the code back into the terminal.
 
 ### Subsequent headless runs
 
@@ -182,9 +234,17 @@ Or with Docker:
 
 Make sure you've downloaded your OAuth credentials from Google Cloud Console and saved them as `credentials.json`.
 
-### Browser doesn't open for authentication
+### Authentication on headless servers
 
-If running in a headless environment, you need to perform the first authentication on a machine with a browser, then copy the `token.pickle` file to your server.
+**Recommended approach** - Use manual auth mode:
+
+```bash
+MANUAL_AUTH=true uv run gdrive-upload
+```
+
+This displays a URL you can visit on any device (phone, computer, etc.). After authorizing, you'll get a code to paste back into the terminal.
+
+**Alternative** - If you have SSH access with port forwarding, you can use automatic mode and forward the port to access the authorization URL.
 
 ### Permission denied errors
 

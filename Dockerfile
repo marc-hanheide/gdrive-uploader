@@ -1,13 +1,14 @@
-FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 WORKDIR /app
 
 # Copy project files
 COPY pyproject.toml /app/
+COPY README.md /app/
 COPY gdrive_uploader.py /app/
 
 # Install dependencies
-RUN uv sync --frozen
+RUN uv sync
 
 # Create directories for credentials and data
 RUN mkdir -p /app/credentials /app/uploads
