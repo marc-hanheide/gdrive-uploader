@@ -138,7 +138,27 @@ uv run gdrive-upload
 
 ## Docker Usage
 
-### Build the image
+### Using Pre-built Images (Recommended)
+
+Pre-built Docker images are automatically published to GitHub Container Registry on every release.
+
+```bash
+# Pull the latest version
+docker pull ghcr.io/marc-hanheide/gdrive-uploader:latest
+
+# Or pull a specific version
+docker pull ghcr.io/marc-hanheide/gdrive-uploader:1.0.0
+```
+
+Available tags:
+- `latest` - Latest stable release from main branch
+- `1.0.0`, `1.0`, `1` - Semantic version tags (e.g., for v1.0.0 release)
+- `main` - Latest build from main branch
+- `main-abc1234` - Specific commit from main branch
+
+### Build the image locally
+
+If you prefer to build locally:
 
 ```bash
 docker build -t gdrive-uploader .
@@ -154,7 +174,7 @@ docker run -it --rm \
   -v $(pwd)/uploads:/app/uploads \
   -v $(pwd)/token.pickle:/app/token.pickle \
   -p 8080:8080 \
-  gdrive-uploader
+  ghcr.io/marc-hanheide/gdrive-uploader:latest
 ```
 
 Open the URL shown in another browser to authorize.
@@ -167,7 +187,7 @@ docker run -it --rm \
   -v $(pwd)/credentials.json:/app/credentials.json \
   -v $(pwd)/uploads:/app/uploads \
   -v $(pwd)/token.pickle:/app/token.pickle \
-  gdrive-uploader
+  ghcr.io/marc-hanheide/gdrive-uploader:latest
 ```
 
 Copy the URL to any browser, authorize, and paste the code back into the terminal.
@@ -178,7 +198,7 @@ Copy the URL to any browser, authorize, and paste the code back into the termina
 docker run --rm \
   -v $(pwd)/token.pickle:/app/token.pickle \
   -v $(pwd)/uploads:/app/uploads \
-  gdrive-uploader
+  ghcr.io/marc-hanheide/gdrive-uploader:latest
 ```
 
 ### Using Docker Compose
@@ -218,8 +238,23 @@ crontab -e
 Or with Docker:
 
 ```bash
-0 2 * * * docker run --rm -v /path/to/token.pickle:/app/token.pickle -v /path/to/uploads:/app/uploads gdrive-uploader >> /var/log/gdrive-uploader.log 2>&1
+0 2 * * * docker run --rm -v /path/to/token.pickle:/app/token.pickle -v /path/to/uploads:/app/uploads ghcr.io/marc-hanheide/gdrive-uploader:latest >> /var/log/gdrive-uploader.log 2>&1
 ```
+
+## Creating a Release
+
+To create a new version release and trigger automated Docker builds:
+
+```bash
+# Tag the release with semantic versioning
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This will automatically:
+- Build the Docker image
+- Push it to GitHub Container Registry with tags: `1.0.0`, `1.0`, `1`, and `latest`
+- Make it available at `ghcr.io/marc-hanheide/gdrive-uploader:1.0.0`
 
 ## How It Works
 
