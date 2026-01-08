@@ -8,6 +8,10 @@ Only uploads if the file doesn't already exist.
 import os
 import pickle
 import hashlib
+import time
+import signal
+import sys
+from datetime import datetime
 from pathlib import Path
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -18,6 +22,15 @@ from googleapiclient.errors import HttpError
 
 # Scopes required for Drive access
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
+
+# Global flag for graceful shutdown
+shutdown_requested = False
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully"""
+    global shutdown_requested
+    print('\n\nShutdown signal received. Finishing current operation...')
+    shutdown_requested = True
 
 class DriveUploader:
     def __init__(self, credentials_file='credentials.json', token_file='token.pickle'):
@@ -357,6 +370,8 @@ def main():
     FORCE_UPLOAD = os.getenv('FORCE_UPLOAD', 'false').lower() == 'true'
     CHECK_MD5 = os.getenv('CHECK_MD5', 'true').lower() == 'true'
     RECURSIVE = os.getenv('RECURSIVE', 'true').lower() == 'true'
+    DAEMON_MODE = os.getenv('DAEMON_MODE', 'false').lower() == 'true'
+    CHECK_INTERVAL = int(os.getenv('CHECK_INTERVAL', '300'))  # Default: 5 minutes
     
     print(f'Google Drive Uploader')
     print(f'Upload directory: {UPLOAD_DIR}')
@@ -366,17 +381,61 @@ def main():
     print(f'Force upload: {"yes" if FORCE_UPLOAD else "no"}')
     if DRIVE_FOLDER_ID:
         print(f'Target folder ID: {DRIVE_FOLDER_ID}')
+    
+    if DAEMON_MODE:
+        print(f'Daemon mode: enabled (check interval: {CHECK_INTERVAL} seconds)')
+        print('Press Ctrl+C to stop gracefully')
+    
     print()
     
+    # Set up signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     uploader = DriveUploader()
-    uploader.upload_directory(
-        UPLOAD_DIR, 
-        DRIVE_FOLDER_ID, 
-        FILE_PATTERN, 
-        force=FORCE_UPLOAD,
-        check_md5=CHECK_MD5,
-        recursive=RECURSIVE
-    )
+    
+    if DAEMON_MODE:
+        # Daemon mode: continuously monitor and upload
+        run_count = 0
+        while not shutdown_requested:
+            run_count += 1
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print(f'\n{"="*60}')
+            print(f'Run #{run_count} - {timestamp}')
+            print(f'{"="*60}')
+            
+            try:
+                uploader.upload_directory(
+                    UPLOAD_DIR, 
+                    DRIVE_FOLDER_ID, 
+                    FILE_PATTERN, 
+                    force=FORCE_UPLOAD,
+                    check_md5=CHECK_MD5,
+                    recursive=RECURSIVE
+                )
+            except Exception as e:
+                print(f'Error during upload: {e}')
+                print('Will retry on next interval...')
+            
+            if not shutdown_requested:
+                print(f'\nNext check in {CHECK_INTERVAL} seconds...')
+                # Sleep in small increments to allow for responsive shutdown
+                for _ in range(CHECK_INTERVAL):
+                    if shutdown_requested:
+                        break
+                    time.sleep(1)
+        
+        print('\nDaemon stopped gracefully.')
+    else:
+        # Single run mode
+        uploader.upload_directory(
+            UPLOAD_DIR, 
+            DRIVE_FOLDER_ID, 
+            FILE_PATTERN, 
+            force=FORCE_UPLOAD,
+            check_md5=CHECK_MD5,
+            recursive=RECURSIVE
+        )
 
 
 if __name__ == '__main__':

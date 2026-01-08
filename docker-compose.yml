@@ -15,3 +15,5 @@ services:
       - CHECK_MD5=${GD_UPLOADER_CHECK_MD5:-true}      # Compare file contents (true/false)
       - FORCE_UPLOAD=${GD_UPLOADER_FORCE_UPLOAD:-false}  # Upload even if file exists (true/false)
       - MANUAL_AUTH=${GD_UPLOADER_MANUAL_AUTH:-true}    # Set to true for manual auth flow
+      - DAEMON_MODE=${GD_UPLOADER_DAEMON_MODE:-false}
+      - CHECK_INTERVAL=${GD_UPLOADER_CHECK_INTERVAL:-300}

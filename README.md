@@ -9,6 +9,7 @@ Automated Google Drive uploader with duplicate detection. Only uploads files tha
 - ✅ Duplicate detection with MD5 checksum comparison
 - ✅ Pattern-based file selection (e.g., upload only PDFs)
 - ✅ Upload to specific Google Drive folders
+- ✅ Daemon mode for continuous monitoring
 - ✅ Docker support for containerised deployment
 - ✅ Built with `uv` for fast dependency management
 
@@ -136,6 +137,92 @@ export FORCE_UPLOAD="false"
 uv run gdrive-upload
 ```
 
+## Daemon Mode
+
+Run the uploader continuously to monitor for new files and upload them automatically at regular intervals.
+
+### Enable Daemon Mode
+
+```bash
+# Run in daemon mode with 5-minute intervals (default)
+export DAEMON_MODE="true"
+uv run gdrive-upload
+```
+
+### Configure Check Interval
+
+```bash
+# Check every 60 seconds (1 minute)
+export DAEMON_MODE="true"
+export CHECK_INTERVAL="60"
+uv run gdrive-upload
+
+# Check every 1800 seconds (30 minutes)
+export DAEMON_MODE="true"
+export CHECK_INTERVAL="1800"
+uv run gdrive-upload
+```
+
+The daemon will:
+- ✅ Run continuously checking for new/modified files
+- ✅ Upload files at the specified interval (default: 300 seconds / 5 minutes)
+- ✅ Show timestamped run information for each check
+- ✅ Handle errors gracefully and retry on the next interval
+- ✅ Respond to Ctrl+C for clean shutdown
+
+### Docker Daemon Mode
+
+Run as a continuous background service:
+
+```bash
+docker run -d \
+  --name gdrive-uploader-daemon \
+  --restart unless-stopped \
+  -e DAEMON_MODE="true" \
+  -e CHECK_INTERVAL="300" \
+  -v $(pwd)/token.pickle:/app/token.pickle \
+  -v $(pwd)/uploads:/app/uploads \
+  ghcr.io/marc-hanheide/gdrive-uploader:latest
+```
+
+View logs:
+```bash
+docker logs -f gdrive-uploader-daemon
+```
+
+Stop the daemon:
+```bash
+docker stop gdrive-uploader-daemon
+```
+
+### Docker Compose Daemon Mode
+
+Update your `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  drive-uploader:
+    image: ghcr.io/marc-hanheide/gdrive-uploader:latest
+    restart: unless-stopped
+    volumes:
+      - ./credentials.json:/app/credentials.json
+      - ./token.pickle:/app/token.pickle
+      - ./uploads:/app/uploads
+    environment:
+      - DAEMON_MODE=true
+      - CHECK_INTERVAL=300
+      - UPLOAD_DIR=/app/uploads
+      - FILE_PATTERN=*
+      - CHECK_MD5=true
+```
+
+Then run:
+```bash
+docker-compose up -d
+```
+
 ## Docker Usage
 
 ### Using Pre-built Images (Recommended)
@@ -224,6 +311,8 @@ To upload to a specific folder:
 5. Set it as `DRIVE_FOLDER_ID` environment variable
 
 ## Automated Uploads with Cron
+
+For scheduled uploads at specific times, you can use cron jobs. For continuous monitoring, consider using [Daemon Mode](#daemon-mode) instead.
 
 Add to your crontab for automated uploads:
 

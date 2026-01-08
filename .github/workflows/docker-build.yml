@@ -48,8 +48,6 @@ jobs:
             type=semver,pattern={{major}}
             # Branch name for main branch
             type=ref,event=branch
-            # Short commit SHA
-            type=sha,prefix={{branch}}-
             # Latest tag for main branch
             type=raw,value=latest,enable={{is_default_branch}}
 
